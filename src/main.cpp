@@ -42,7 +42,6 @@ using namespace std;
  * Global state
  */
 
-statsd::StatsdClient statsClient;
 CCriticalSection cs_main;
 
 BlockMap mapBlockIndex;
