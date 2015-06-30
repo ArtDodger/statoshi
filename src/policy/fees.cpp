@@ -10,6 +10,10 @@
 #include "streams.h"
 #include "txmempool.h"
 #include "util.h"
+#include "statsd_client.h"
+#include <boost/lexical_cast.hpp>
+
+statsd::StatsdClient statsClient;
 
 void TxConfirmStats::Initialize(std::vector<double>& defaultBuckets,
                                 unsigned int maxConfirms, double _decay, std::string _dataTypeString)
@@ -484,6 +488,13 @@ void CBlockPolicyEstimator::processBlock(unsigned int nBlockHeight,
     // Update all exponential averages with the current block states
     feeStats.UpdateMovingAverages();
     priStats.UpdateMovingAverages();
+
+    // emit stats for estimated fees and priorities
+    for (unsigned int i = 1; i <= MAX_BLOCK_CONFIRMS; i++)
+    {
+        statsClient.gauge("estimates.fee." + boost::lexical_cast<std::string>(i), (double)CBlockPolicyEstimator::estimateFee(i).GetFeePerK());
+        statsClient.gauge("estimates.priority." + boost::lexical_cast<std::string>(i), CBlockPolicyEstimator::estimatePriority(i));
+    }
 
     LogPrint("estimatefee", "Blockpolicy after updating estimates for %u confirmed entries, new mempool map size %u\n",
              entries.size(), mapMemPoolTxs.size());
